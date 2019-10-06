@@ -1,0 +1,31 @@
+{
+  "name": "mathi",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "start": "parcel src/index.html",
+    "build": "parcel build src/index.html",
+    "lint": "eslint src",
+    "lint:fix": "npm run lint -- --fix",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "babel-preset-env": "^1.7.0",
+    "elm": "^0.19.0-no-deps",
+    "elm-hot": "^1.1.2",
+    "eslint": "^6.5.1",
+    "eslint-config-airbnb-base": "^14.0.0",
+    "eslint-config-prettier": "^6.4.0",
+    "eslint-plugin-import": "^2.18.2",
+    "eslint-plugin-prettier": "^3.1.1",
+    "node-elm-compiler": "^5.0.4",
+    "parcel": "^1.12.4",
+    "postcss": "^7.0.18",
+    "prettier": "^1.18.2",
+    "tailwindcss": "^1.1.2"
+  }
+}

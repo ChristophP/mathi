@@ -1,0 +1,15 @@
+@tailwind base;
+
+html {
+  @apply bg-pink-200;
+  @apply text-4xl;
+  @apply text-purple-700;
+}
+
+@tailwind components;
+
+@tailwind utilities;
+
+.v-gap > * + * {
+  @apply mt-4;
+}
