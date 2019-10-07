@@ -53,8 +53,29 @@ type Msg
     | StepGame
 
 
+numberGenerator : Random.Generator ( Int, Int )
 numberGenerator =
     Random.pair (Random.int 0 4) (Random.int 0 4)
+
+
+fruitGenerator : Random.Generator String
+fruitGenerator =
+    Random.int 0 3
+        |> Random.map
+            (\val ->
+                case val of
+                    0 ->
+                        "🍓"
+
+                    1 ->
+                        "🍏"
+
+                    2 ->
+                        "🍉"
+
+                    _ ->
+                        "🍋"
+            )
 
 
 update msg model =
@@ -81,6 +102,31 @@ update msg model =
             )
 
 
+numberWithFruit : Int -> String -> Html msg
+numberWithFruit num fruit =
+    div [ class "flex flex-col items-center justify-end" ]
+        [ div [ class "text-2xl" ] [ text (String.repeat num fruit) ]
+        , div [] [ text (String.fromInt num) ]
+        ]
+
+
+viewProblem : Problem -> Random.Seed -> Html msg
+viewProblem (Problem firstNum Plus secondNum) seed =
+    let
+        ( ( fruit1, fruit2 ), _ ) =
+            Random.step (Random.pair fruitGenerator fruitGenerator) seed
+    in
+    div [ class "flex flex-row text-6xl h-gap" ]
+        [ numberWithFruit firstNum fruit1
+        , div [ class "self-end" ] [ text "+" ]
+        , numberWithFruit secondNum fruit2
+        ]
+
+
+viewAnswer content =
+    div [ class "border-4 rounded-2 border-purple-700 cursor-pointer w-10 h-10 flex items-center justify-center", onClick StepGame ] [ text content ]
+
+
 view : Model -> Browser.Document Msg
 view model =
     Browser.Document "Mathi!" <|
@@ -101,10 +147,17 @@ view model =
                     let
                         (Problem firstNum Plus secondNum) =
                             currentProblem
+
+                        correctAnswer =
+                            firstNum + secondNum
                     in
                     [ main_ [ class "flex flex-col w-full items-center" ]
-                        [ div [] [ text <| String.join " " [ String.fromInt firstNum, "+", String.fromInt secondNum ] ]
-                        , div [ onClick StepGame ] [ text "answers" ]
+                        [ viewProblem currentProblem model.seed
+                        , div [ class "flex flex-row h-gap" ]
+                            [ viewAnswer "?"
+                            , viewAnswer (String.fromInt correctAnswer)
+                            , viewAnswer "?"
+                            ]
                         ]
                     ]
 

@@ -13,3 +13,7 @@ html {
 .v-gap > * + * {
   @apply mt-4;
 }
+
+.h-gap > * + * {
+  @apply ml-4;
+}
