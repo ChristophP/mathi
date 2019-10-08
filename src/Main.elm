@@ -4,8 +4,11 @@ import Browser
 import Html exposing (..)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
+import Process
 import Random
 import Random.List exposing (choose, shuffle)
+import Task
+import Util exposing (listCount)
 
 
 main =
@@ -26,11 +29,30 @@ type alias Model =
 type Page
     = Start
     | Play PlayState
-    | Gameover (List Problem)
+    | Gameover (List ( Problem, Int ))
+
+
+updatePlay fn page =
+    case page of
+        Play playState ->
+            Play (fn playState)
+
+        _ ->
+            page
 
 
 type Problem
     = Problem Int Op Int
+
+
+getProblemAnswer : Problem -> Int
+getProblemAnswer (Problem num1 Plus num2) =
+    num1 + num2
+
+
+isCorrectAnswer : ( Problem, Int ) -> Bool
+isCorrectAnswer ( problem, int ) =
+    getProblemAnswer problem == int
 
 
 type Op
@@ -39,30 +61,42 @@ type Op
 
 type alias PlayState =
     { currentProblem : Problem
-    , previousProblems : List Problem
+    , previousProblems : List ( Problem, Int )
+    , currentAnswer : Maybe Int
     }
 
 
 init : () -> ( Model, Cmd Msg )
 init () =
-    ( { page = Start, seed = Random.initialSeed 0 }, Random.generate GotSeed Random.independentSeed )
+    ( { page = Start, seed = Random.initialSeed 0 }
+    , Random.generate GotSeed Random.independentSeed
+    )
 
 
 type Msg
     = GotSeed Random.Seed
     | StartGame
     | StepGame
+    | Answer Int
 
 
+maxNum : Int
 maxNum =
     4
 
 
+maxQuestions : Int
+maxQuestions =
+    10
+
+
+listWithoutNum : Int -> List Int
 listWithoutNum num =
     List.range 0 (num - 1)
         ++ List.range (num + 1) maxNum
 
 
+wrongAnswersGenerator : Int -> Random.Generator ( Int, Int )
 wrongAnswersGenerator correctAnswer =
     let
         wrongAnswers =
@@ -93,6 +127,7 @@ fruitGenerator =
         |> Random.map (Tuple.first >> Maybe.withDefault "Will-never-happen")
 
 
+update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
         GotSeed seed ->
@@ -103,7 +138,15 @@ update msg model =
                 ( ( firstNum, secondNum ), newSeed ) =
                     Random.step numberGenerator model.seed
             in
-            ( { model | page = Play { currentProblem = Problem firstNum Plus secondNum, previousProblems = [] }, seed = newSeed }
+            ( { model
+                | page =
+                    Play
+                        { currentProblem = Problem firstNum Plus secondNum
+                        , previousProblems = []
+                        , currentAnswer = Nothing
+                        }
+                , seed = newSeed
+              }
             , Cmd.none
             )
 
@@ -112,9 +155,49 @@ update msg model =
                 ( ( firstNum, secondNum ), newSeed ) =
                     Random.step numberGenerator model.seed
             in
-            ( { model | page = Play { currentProblem = Problem firstNum Plus secondNum, previousProblems = [] }, seed = newSeed }
-            , Cmd.none
-            )
+            case model.page of
+                Play { previousProblems } ->
+                    if List.length previousProblems >= maxQuestions then
+                        ( { model | page = Gameover previousProblems }, Cmd.none )
+
+                    else
+                        ( { model
+                            | page =
+                                updatePlay
+                                    (\playState ->
+                                        { playState
+                                            | currentProblem = Problem firstNum Plus secondNum
+                                            , currentAnswer = Nothing
+                                        }
+                                    )
+                                    model.page
+                            , seed = newSeed
+                          }
+                        , Cmd.none
+                        )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        Answer answer ->
+            case model.page of
+                Play _ ->
+                    ( { model
+                        | page =
+                            updatePlay
+                                (\playState ->
+                                    { playState
+                                        | currentAnswer = Just answer
+                                        , previousProblems = playState.previousProblems ++ [ ( playState.currentProblem, answer ) ]
+                                    }
+                                )
+                                model.page
+                      }
+                    , Task.perform (\_ -> StepGame) (Process.sleep 1500)
+                    )
+
+                _ ->
+                    ( model, Cmd.none )
 
 
 numberWithFruit : Int -> String -> Html msg
@@ -141,9 +224,74 @@ viewProblem (Problem firstNum Plus secondNum) seed =
 viewAnswer answer =
     div
         [ class "border-4 rounded-2 border-purple-700 cursor-pointer w-10 h-10 flex items-center justify-center"
-        , onClick StepGame
+        , onClick (Answer answer)
         ]
         [ text (String.fromInt answer) ]
+
+
+withPlayFrame : List (Html msg) -> Html msg -> List (Html msg)
+withPlayFrame questions results =
+    [ main_ [ class "flex flex-row w-full items-center" ]
+        [ div [ class "flex flex-col w-full items-center" ] questions
+        , div [ class "px-2" ] [ results ]
+        ]
+    ]
+
+
+viewStars : List ( Problem, Int ) -> Html msg
+viewStars previousProblems =
+    let
+        stars =
+            List.map
+                (\item ->
+                    if isCorrectAnswer item then
+                        span [ class "text-yellow-600" ] [ text "★" ]
+
+                    else
+                        span [] [ text "☆" ]
+                )
+                previousProblems
+
+        dots =
+            List.repeat (maxQuestions - List.length stars) (text "•")
+    in
+    stars
+        ++ dots
+        |> List.intersperse (br [] [])
+        |> div [ class "leading-tight text-xs text-center p-2 border-2 border-yellow-600" ]
+
+
+viewPlay : PlayState -> Random.Seed -> List (Html Msg)
+viewPlay { currentProblem, previousProblems, currentAnswer } seed =
+    let
+        correctAnswer =
+            getProblemAnswer currentProblem
+    in
+    case currentAnswer of
+        Nothing ->
+            let
+                ( ( wrongAnswer1, wrongAnswer2 ), newSeed ) =
+                    Random.step (wrongAnswersGenerator correctAnswer) seed
+
+                ( allAnswers, _ ) =
+                    Random.step (shuffle [ correctAnswer, wrongAnswer1, wrongAnswer2 ]) newSeed
+            in
+            withPlayFrame
+                [ viewProblem currentProblem seed
+                , div [ class "flex flex-row h-gap" ]
+                    (List.map viewAnswer allAnswers)
+                ]
+                (viewStars previousProblems)
+
+        Just answer ->
+            withPlayFrame
+                [ if answer == getProblemAnswer currentProblem then
+                    text "YAY"
+
+                  else
+                    text "NOOOO!"
+                ]
+                (viewStars previousProblems)
 
 
 view : Model -> Browser.Document Msg
@@ -162,27 +310,17 @@ view model =
                         ]
                     ]
 
-                Play { currentProblem, previousProblems } ->
-                    let
-                        (Problem firstNum Plus secondNum) =
-                            currentProblem
-
-                        correctAnswer =
-                            firstNum + secondNum
-
-                        ( ( wrongAnswer1, wrongAnswer2 ), newSeed ) =
-                            Random.step (wrongAnswersGenerator correctAnswer) model.seed
-
-                        ( allAnswers, _ ) =
-                            Random.step (shuffle [ correctAnswer, wrongAnswer1, wrongAnswer2 ]) newSeed
-                    in
-                    [ main_ [ class "flex flex-col w-full items-center" ]
-                        [ viewProblem currentProblem model.seed
-                        , div [ class "flex flex-row h-gap" ]
-                            (List.map viewAnswer allAnswers)
-                        ]
-                    ]
+                Play playState ->
+                    viewPlay playState model.seed
 
                 Gameover results ->
-                    [ text "TODO" ]
+                    let
+                        numRightAnswers =
+                            listCount isCorrectAnswer results
+                    in
+                    [ div []
+                        [ h2 [] [ text "Game Over" ]
+                        , text (String.fromInt numRightAnswers ++ " right answers!")
+                        ]
+                    ]
         ]
