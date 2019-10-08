@@ -5,6 +5,7 @@ import Html exposing (..)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
 import Random
+import Random.List exposing (choose, shuffle)
 
 
 main =
@@ -53,29 +54,43 @@ type Msg
     | StepGame
 
 
+maxNum =
+    4
+
+
+listWithoutNum num =
+    List.range 0 (num - 1)
+        ++ List.range (num + 1) maxNum
+
+
+wrongAnswersGenerator correctAnswer =
+    let
+        wrongAnswers =
+            listWithoutNum correctAnswer
+    in
+    choose wrongAnswers
+        |> Random.andThen
+            (\( maybeAnswer1, rest ) ->
+                choose rest
+                    |> Random.map
+                        (\( maybeAnswer2, _ ) ->
+                            Tuple.mapBoth
+                                (Maybe.withDefault 0)
+                                (Maybe.withDefault 0)
+                                ( maybeAnswer1, maybeAnswer2 )
+                        )
+            )
+
+
 numberGenerator : Random.Generator ( Int, Int )
 numberGenerator =
-    Random.pair (Random.int 0 4) (Random.int 0 4)
+    Random.pair (Random.int 0 maxNum) (Random.int 0 maxNum)
 
 
 fruitGenerator : Random.Generator String
 fruitGenerator =
-    Random.int 0 3
-        |> Random.map
-            (\val ->
-                case val of
-                    0 ->
-                        "🍓"
-
-                    1 ->
-                        "🍏"
-
-                    2 ->
-                        "🍉"
-
-                    _ ->
-                        "🍋"
-            )
+    choose [ "🍓", "🍏", "🍉", "🍋" ]
+        |> Random.map (Tuple.first >> Maybe.withDefault "Will-never-happen")
 
 
 update msg model =
@@ -123,8 +138,12 @@ viewProblem (Problem firstNum Plus secondNum) seed =
         ]
 
 
-viewAnswer content =
-    div [ class "border-4 rounded-2 border-purple-700 cursor-pointer w-10 h-10 flex items-center justify-center", onClick StepGame ] [ text content ]
+viewAnswer answer =
+    div
+        [ class "border-4 rounded-2 border-purple-700 cursor-pointer w-10 h-10 flex items-center justify-center"
+        , onClick StepGame
+        ]
+        [ text (String.fromInt answer) ]
 
 
 view : Model -> Browser.Document Msg
@@ -150,14 +169,17 @@ view model =
 
                         correctAnswer =
                             firstNum + secondNum
+
+                        ( ( wrongAnswer1, wrongAnswer2 ), newSeed ) =
+                            Random.step (wrongAnswersGenerator correctAnswer) model.seed
+
+                        ( allAnswers, _ ) =
+                            Random.step (shuffle [ correctAnswer, wrongAnswer1, wrongAnswer2 ]) newSeed
                     in
                     [ main_ [ class "flex flex-col w-full items-center" ]
                         [ viewProblem currentProblem model.seed
                         , div [ class "flex flex-row h-gap" ]
-                            [ viewAnswer "?"
-                            , viewAnswer (String.fromInt correctAnswer)
-                            , viewAnswer "?"
-                            ]
+                            (List.map viewAnswer allAnswers)
                         ]
                     ]
 
