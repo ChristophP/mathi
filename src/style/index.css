@@ -2,8 +2,20 @@
 
 html {
   @apply bg-pink-200;
-  @apply text-4xl;
   @apply text-purple-700;
+  font-size: 20px;
+}
+
+@screen md {
+  html {
+    font-size: 24px;
+  }
+}
+
+@screen lg {
+  html {
+    font-size: 28px;
+  }
 }
 
 @tailwind components;

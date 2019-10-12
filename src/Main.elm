@@ -235,9 +235,11 @@ viewProblem (Problem firstNum Plus secondNum) seed =
         ]
 
 
+viewAnswer : Int -> Html Msg
 viewAnswer answer =
     div
-        [ class "border-4 rounded-2 border-purple-700 cursor-pointer w-10 h-10 flex items-center justify-center"
+        [ class "flex-1 flex items-center justify-center border-purple-700 py-2"
+        , class "text-white text-2xl font-bold cursor-pointer bg-purple-700 hover:bg-purple-500 rounded-sm"
         , onClick (Answer answer)
         ]
         [ text (String.fromInt answer) ]
@@ -292,7 +294,7 @@ viewPlay { currentProblem, previousProblems, currentAnswer } seed =
             in
             withPlayFrame
                 [ viewProblem currentProblem seed
-                , div [ class "flex flex-row h-gap" ]
+                , div [ class "w-full flex flex-row h-gap" ]
                     (List.map viewAnswer allAnswers)
                 ]
                 (viewStars previousProblems)
