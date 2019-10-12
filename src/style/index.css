@@ -17,3 +17,26 @@ html {
 .h-gap > * + * {
   @apply ml-4;
 }
+
+@keyframes pop {
+  0% {
+    transform: none;
+  }
+  50% {
+    transform: scale(2);
+  }
+  100% {
+    transform: none;
+  }
+}
+
+.pop {
+  transform-origin: center;
+  animation-name: pop;
+  animation-duration: 1s;
+}
+
+/* svg pie animation */
+.circleTransition {
+  transition: stroke-dasharray 1.5s;
+}

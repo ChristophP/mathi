@@ -4,6 +4,7 @@ import Browser
 import Html exposing (..)
 import Html.Attributes exposing (class)
 import Html.Events exposing (onClick)
+import Icons
 import Process
 import Random
 import Random.List exposing (choose, shuffle)
@@ -29,7 +30,7 @@ type alias Model =
 type Page
     = Start
     | Play PlayState
-    | Gameover (List ( Problem, Int ))
+    | Gameover (List ( Problem, Int )) Bool
 
 
 updatePlay fn page =
@@ -73,13 +74,6 @@ init () =
     )
 
 
-type Msg
-    = GotSeed Random.Seed
-    | StartGame
-    | StepGame
-    | Answer Int
-
-
 maxNum : Int
 maxNum =
     4
@@ -87,7 +81,7 @@ maxNum =
 
 maxQuestions : Int
 maxQuestions =
-    10
+    5
 
 
 listWithoutNum : Int -> List Int
@@ -127,6 +121,18 @@ fruitGenerator =
         |> Random.map (Tuple.first >> Maybe.withDefault "Will-never-happen")
 
 
+
+-- UPDATE
+
+
+type Msg
+    = GotSeed Random.Seed
+    | StartGame
+    | StepGame
+    | Answer Int
+    | GameOverLoaded
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -158,7 +164,7 @@ update msg model =
             case model.page of
                 Play { previousProblems } ->
                     if List.length previousProblems >= maxQuestions then
-                        ( { model | page = Gameover previousProblems }, Cmd.none )
+                        ( { model | page = Gameover previousProblems False }, Task.perform (\_ -> GameOverLoaded) (Process.sleep 100) )
 
                     else
                         ( { model
@@ -195,6 +201,14 @@ update msg model =
                       }
                     , Task.perform (\_ -> StepGame) (Process.sleep 1500)
                     )
+
+                _ ->
+                    ( model, Cmd.none )
+
+        GameOverLoaded ->
+            case model.page of
+                Gameover results _ ->
+                    ( { model | page = Gameover results True }, Cmd.none )
 
                 _ ->
                     ( model, Cmd.none )
@@ -285,11 +299,14 @@ viewPlay { currentProblem, previousProblems, currentAnswer } seed =
 
         Just answer ->
             withPlayFrame
-                [ if answer == getProblemAnswer currentProblem then
-                    text "YAY"
+                [ span [ class "text-4xl font-serif pop" ]
+                    [ text <|
+                        if answer == getProblemAnswer currentProblem then
+                            "😊"
 
-                  else
-                    text "NOOOO!"
+                        else
+                            "😢"
+                    ]
                 ]
                 (viewStars previousProblems)
 
@@ -313,14 +330,27 @@ view model =
                 Play playState ->
                     viewPlay playState model.seed
 
-                Gameover results ->
+                Gameover results loaded ->
                     let
                         numRightAnswers =
                             listCount isCorrectAnswer results
+
+                        percentage =
+                            if not loaded then
+                                0
+
+                            else
+                                round (toFloat numRightAnswers / toFloat maxQuestions * 100)
                     in
-                    [ div []
-                        [ h2 [] [ text "Game Over" ]
+                    [ div [ class "v-gap" ]
+                        [ h2 [ class "text-center" ] [ text "Game Over" ]
                         , text (String.fromInt numRightAnswers ++ " right answers!")
+                        , Icons.pie percentage
+                        , button
+                            [ class "bg-yellow-500 p-2 m-auto block"
+                            , onClick StartGame
+                            ]
+                            [ text "Play Again!" ]
                         ]
                     ]
         ]
