@@ -117,8 +117,7 @@ numberGenerator =
 
 fruitGenerator : Random.Generator String
 fruitGenerator =
-    choose [ "🍓", "🍏", "🍉", "🍋" ]
-        |> Random.map (Tuple.first >> Maybe.withDefault "Will-never-happen")
+    Random.uniform "🍓" [ "🍏", "🍉", "🍋" ]
 
 
 
