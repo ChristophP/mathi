@@ -87,7 +87,7 @@ maxQuestions =
 listWithoutNum : Int -> List Int
 listWithoutNum num =
     List.range 0 (num - 1)
-        ++ List.range (num + 1) maxNum
+        ++ List.range (num + 1) (maxNum * 2)
 
 
 wrongAnswersGenerator : Int -> Random.Generator ( Int, Int )
