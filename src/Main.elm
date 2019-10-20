@@ -76,7 +76,7 @@ init () =
 
 maxNum : Int
 maxNum =
-    5
+    10
 
 
 maxQuestions : Int
