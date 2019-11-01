@@ -5,15 +5,21 @@ A small math game for kids built with Elm
 ## Running it locally
 
 Install dependendencies
-```npm install```
+```sh
+npm install
+```
 
 Run it with a local web server
 
-```npm start```
+```sh
+npm start
+```
 
 Build for production
 
-```npm run build```
+```sh
+npm run build
+```
 
 ## Tech used
 
