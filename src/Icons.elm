@@ -22,7 +22,7 @@ pie percentage =
             , stroke "green"
             , strokeWidth "10"
 
-            -- 3.14 is an approximation of 10 * PI, to obtain the circumference of the cirle.
+            -- 31.4 is an approximation of 10 * PI, to obtain the circumference of the cirle.
             , strokeDasharray <| String.join "" [ "calc(" ++ String.fromInt percentage ++ " * 31.4 / 100) 31.4" ]
             , transform "rotate(-90) translate(-20)"
             ]

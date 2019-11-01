@@ -21,6 +21,10 @@ main =
         }
 
 
+
+-- MODEL AND TYPES
+
+
 type alias Model =
     { page : Page
     , seed : Random.Seed
@@ -72,6 +76,10 @@ init () =
     ( { page = Start, seed = Random.initialSeed 0 }
     , Random.generate GotSeed Random.independentSeed
     )
+
+
+
+-- CONSTANTS AND RANDOM GENERATORS
 
 
 maxNum : Int
@@ -163,7 +171,9 @@ update msg model =
             case model.page of
                 Play { previousProblems } ->
                     if List.length previousProblems >= maxQuestions then
-                        ( { model | page = Gameover previousProblems False }, Task.perform (\_ -> GameOverLoaded) (Process.sleep 100) )
+                        ( { model | page = Gameover previousProblems False }
+                        , Task.perform (\_ -> GameOverLoaded) (Process.sleep 100)
+                        )
 
                     else
                         ( { model
@@ -193,7 +203,9 @@ update msg model =
                                 (\playState ->
                                     { playState
                                         | currentAnswer = Just answer
-                                        , previousProblems = playState.previousProblems ++ [ ( playState.currentProblem, answer ) ]
+                                        , previousProblems =
+                                            playState.previousProblems
+                                                ++ [ ( playState.currentProblem, answer ) ]
                                     }
                                 )
                                 model.page
@@ -211,6 +223,10 @@ update msg model =
 
                 _ ->
                     ( model, Cmd.none )
+
+
+
+-- VIEW
 
 
 numberWithFruit : Int -> String -> Html msg
