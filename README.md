@@ -23,6 +23,6 @@ npm run build
 
 ## Tech used
 
-- Elm
-- Parcel
-- TailwindCSS
+- [Elm](https://elm-lang.org/)
+- [Parcel](https://parceljs.org/)
+- [TailwindCSS](https://tailwindcss.com)
