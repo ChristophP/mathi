@@ -21,7 +21,7 @@ Build for production
 npm run build
 ```
 
-## Tech used
+## Built with ...
 
 - [Elm](https://elm-lang.org/)
 - [Parcel](https://parceljs.org/)
