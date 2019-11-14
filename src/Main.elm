@@ -37,6 +37,7 @@ type Page
     | Gameover (List ( Problem, Int )) Bool
 
 
+updatePlay : (PlayState -> PlayState) -> Page -> Page
 updatePlay fn page =
     case page of
         Play playState ->
@@ -44,6 +45,50 @@ updatePlay fn page =
 
         _ ->
             page
+
+
+addNewAnswer : Int -> PlayState -> PlayState
+addNewAnswer answer playState =
+    let
+        previousProblems =
+            playState.previousProblems
+                ++ [ ( playState.currentProblem, answer ) ]
+    in
+    { playState
+        | currentAnswer = Just answer
+        , previousProblems = previousProblems
+    }
+
+
+stepGame : Model -> ( Model, Cmd Msg )
+stepGame model =
+    case model.page of
+        Play { previousProblems } ->
+            if List.length previousProblems >= maxQuestions then
+                ( { model | page = Gameover previousProblems False }
+                , Task.perform (\_ -> GameOverLoaded) (Process.sleep 100)
+                )
+
+            else
+                let
+                    ( ( firstNum, secondNum ), newSeed ) =
+                        Random.step numberGenerator model.seed
+
+                    setPlayState playState =
+                        { playState
+                            | currentProblem = Problem firstNum Plus secondNum
+                            , currentAnswer = Nothing
+                        }
+                in
+                ( { model
+                    | page = updatePlay setPlayState model.page
+                    , seed = newSeed
+                  }
+                , Cmd.none
+                )
+
+        _ ->
+            ( model, Cmd.none )
 
 
 type Problem
@@ -164,52 +209,16 @@ update msg model =
             )
 
         StepGame ->
-            let
-                ( ( firstNum, secondNum ), newSeed ) =
-                    Random.step numberGenerator model.seed
-            in
-            case model.page of
-                Play { previousProblems } ->
-                    if List.length previousProblems >= maxQuestions then
-                        ( { model | page = Gameover previousProblems False }
-                        , Task.perform (\_ -> GameOverLoaded) (Process.sleep 100)
-                        )
-
-                    else
-                        ( { model
-                            | page =
-                                updatePlay
-                                    (\playState ->
-                                        { playState
-                                            | currentProblem = Problem firstNum Plus secondNum
-                                            , currentAnswer = Nothing
-                                        }
-                                    )
-                                    model.page
-                            , seed = newSeed
-                          }
-                        , Cmd.none
-                        )
-
-                _ ->
-                    ( model, Cmd.none )
+            stepGame model
 
         Answer answer ->
             case model.page of
                 Play _ ->
-                    ( { model
-                        | page =
-                            updatePlay
-                                (\playState ->
-                                    { playState
-                                        | currentAnswer = Just answer
-                                        , previousProblems =
-                                            playState.previousProblems
-                                                ++ [ ( playState.currentProblem, answer ) ]
-                                    }
-                                )
-                                model.page
-                      }
+                    let
+                        newPage =
+                            updatePlay (addNewAnswer answer) model.page
+                    in
+                    ( { model | page = newPage }
                     , Task.perform (\_ -> StepGame) (Process.sleep 1500)
                     )
 
