@@ -4,6 +4,7 @@ html {
   @apply bg-pink-200;
   @apply text-purple-700;
   font-size: 20px;
+  user-select: none;
 }
 
 @screen md {
