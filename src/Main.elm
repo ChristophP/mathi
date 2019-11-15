@@ -60,37 +60,6 @@ addNewAnswer answer playState =
     }
 
 
-stepGame : Model -> ( Model, Cmd Msg )
-stepGame model =
-    case model.page of
-        Play { previousProblems } ->
-            if List.length previousProblems >= maxQuestions then
-                ( { model | page = Gameover previousProblems False }
-                , Task.perform (\_ -> GameOverLoaded) (Process.sleep 100)
-                )
-
-            else
-                let
-                    ( ( firstNum, secondNum ), newSeed ) =
-                        Random.step numberGenerator model.seed
-
-                    setPlayState playState =
-                        { playState
-                            | currentProblem = Problem firstNum Plus secondNum
-                            , currentAnswer = Nothing
-                        }
-                in
-                ( { model
-                    | page = updatePlay setPlayState model.page
-                    , seed = newSeed
-                  }
-                , Cmd.none
-                )
-
-        _ ->
-            ( model, Cmd.none )
-
-
 type Problem
     = Problem Int Op Int
 
@@ -183,6 +152,37 @@ type Msg
     | StepGame
     | Answer Int
     | GameOverLoaded
+
+
+stepGame : Model -> ( Model, Cmd Msg )
+stepGame model =
+    case model.page of
+        Play { previousProblems } ->
+            if List.length previousProblems >= maxQuestions then
+                ( { model | page = Gameover previousProblems False }
+                , Task.perform (\_ -> GameOverLoaded) (Process.sleep 100)
+                )
+
+            else
+                let
+                    ( ( firstNum, secondNum ), newSeed ) =
+                        Random.step numberGenerator model.seed
+
+                    setPlayState playState =
+                        { playState
+                            | currentProblem = Problem firstNum Plus secondNum
+                            , currentAnswer = Nothing
+                        }
+                in
+                ( { model
+                    | page = updatePlay setPlayState model.page
+                    , seed = newSeed
+                  }
+                , Cmd.none
+                )
+
+        _ ->
+            ( model, Cmd.none )
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
