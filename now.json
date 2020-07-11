@@ -1,6 +1,5 @@
 {
     "version": 2,
-    "name": "mathi-game",
     "builds": [
         { "src": "dist/**", "use": "@now/static" }
     ],
