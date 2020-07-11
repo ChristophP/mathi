@@ -368,10 +368,10 @@ view model =
                             else
                                 round (toFloat numRightAnswers / toFloat maxQuestions * 100)
                     in
-                    [ div [ class "v-gap" ]
-                        [ h2 [ class "text-center" ] [ text "Game Over" ]
+                    [ div [ class "v-gap text-center" ]
+                        [ h2 [] [ text "Game Over" ]
                         , text (String.fromInt numRightAnswers ++ " right answers!")
-                        , Icons.pie percentage
+                        , div [class "w-64"] [Icons.pie percentage]
                         , button
                             [ class "bg-yellow-500 p-2 m-auto block"
                             , onClick StartGame
